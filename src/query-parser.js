@@ -42,8 +42,8 @@ QueryParser.prototype.createQuery = function( parsedInput ) {
   if (parsedInput.hasPlugins) {
     /* for now, only 1 criteria is allowed */
     var def = parsedInput.query[0]
-    var func = this._provider._plugins[def.op]
-    query = func(def.payload);
+    var func = this._provider._plugins[def.operator]
+    query = func(def.payload)
   } else {
     query = rethinkdb.table( parsedInput.table )
   }
