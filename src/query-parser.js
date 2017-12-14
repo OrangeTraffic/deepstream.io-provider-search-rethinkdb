@@ -126,7 +126,7 @@ QueryParser.prototype.parseInput = function( input ) {
   for( i = 0; i < parsedInput.query.length; i++ ) {
     condition = parsedInput.query[ i ]
 
-    if (_.isArray(condition) && condition.operator) {
+    if (!_.isArray(condition) && condition.operator) {
       /* this is a plugin operator */
       if (!_.isFunction(this._provider._plugins[condition.operator])) {
         return this._queryError( input, 'Invalid plugin definition' )
