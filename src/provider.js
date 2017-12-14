@@ -25,6 +25,7 @@ var Provider = function( config ) {
   this._deepstreamClient = null;
   this._listName = config.listName || 'search';
   this._searches = {};
+  this._plugins = config.plugins || {};
 };
 
 util.inherits( Provider, EventEmitter );
