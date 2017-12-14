@@ -1,5 +1,5 @@
 var rethinkdb = require( 'rethinkdb' )
-
+var _ = require('lodash')
 
 var QueryParser = function( provider ) {
   this._provider = provider
