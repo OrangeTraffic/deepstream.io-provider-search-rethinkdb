@@ -5,6 +5,8 @@ var QueryParser = function( provider ) {
   this._provider = provider
 }
 
+const isPlugin = condition => !_.isArray(condition) && condition.operator;
+
 /**
  * Parses the query string, queries are expected to
  * be send as JSON. The full name would look like this
@@ -39,35 +41,30 @@ QueryParser.prototype.createQuery = function( parsedInput ) {
     query,
     i
 
-  if (parsedInput.hasPlugins) {
-    /* for now, only 1 criteria is allowed */
-    var def = parsedInput.query[0]
-    var func = this._provider._plugins[def.operator]
-    query = func(def.payload)
-  } else {
-    query = rethinkdb.table( parsedInput.table )
-  }
+  query = rethinkdb.table( parsedInput.table )
 
   if( parsedInput.order ) {
     query = query.orderBy({ index: rethinkdb[ parsedInput.desc ? 'desc' : 'asc' ]( parsedInput.order ) })
   }
 
-  if (!parsedInput.hasPlugins) {
-      for (i = 0; i < parsedInput.query.length; i++) {
-          condition = parsedInput.query[i]
+  for (i = 0; i < parsedInput.query.length; i++) {
+    condition = parsedInput.query[i]
 
-          if (condition[1] !== 'in') {
-              predicate = this._getRow(condition[0])[condition[1]](condition[2])
-          } else {
-              predicate = function (record) {
-                  return rethinkdb.expr(condition[2]).contains(record(condition[0]))
-              }
-          }
-
-          query = query.filter(predicate)
+    if (isPlugin(condition)) {
+      var func = this._provider._plugins[condition.operator]
+      predicate = func(condition.payload)
+    } else if (condition[1] !== 'in') {
+      predicate = this._getRow(condition[0])[condition[1]](condition[2])
+    } else {
+      predicate = function (record) {
+        return rethinkdb.expr(condition[2]).contains(record(condition[0]))
       }
-      query = query( this._provider.primaryKey )
+    }
+
+    query = query.filter(predicate)
   }
+
+  query = query( this._provider.primaryKey )
 
   if( parsedInput.limit ) {
     query = query.limit( parsedInput.limit )
@@ -126,15 +123,13 @@ QueryParser.prototype.parseInput = function( input ) {
   for( i = 0; i < parsedInput.query.length; i++ ) {
     condition = parsedInput.query[ i ]
 
-    if (!_.isArray(condition) && condition.operator) {
+    if (isPlugin(condition)) {
       /* this is a plugin operator */
       if (!_.isFunction(this._provider._plugins[condition.operator])) {
         return this._queryError( input, 'Invalid plugin definition' )
       }
-      parsedInput.hasPlugins = true;
       continue;
     }
-
 
     if( condition.length !== 3 ) {
       return this._queryError( input, 'Too few parameters' )
