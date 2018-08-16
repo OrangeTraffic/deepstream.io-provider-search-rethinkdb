@@ -52,7 +52,7 @@ QueryParser.prototype.createQuery = function( parsedInput ) {
 
     if (isPlugin(condition)) {
       var func = this._provider._plugins[condition.operator]
-      predicate = func(condition.payload)
+      predicate = func(condition.payload, rethinkdb)
     } else if (condition[1] !== 'in') {
       predicate = this._getRow(condition[0])[condition[1]](condition[2])
     } else {
